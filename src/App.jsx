@@ -51,7 +51,7 @@ function App() {
         return () => {
             socket.current.disconnect();
         };
-    }, [chatStarted]);
+    }, [chatStarted, name, email]);
 
 
 
@@ -88,29 +88,17 @@ function App() {
         if (name.trim() && email.trim()) {
             setChatStarted(true);
 
-            // http://localhost:6969/
-
-            // io.("http://localhost:6969/")
-
-            // socket.current.emit("start", JSON.stringify({ name, email }));
-
-            // Add a welcome message from the bot
-            setMessages([
-                {
-                    sender: 'bot',
-                    text: `Hey ${name}! 👋 Welcome to my interactive portfolio. I'm excited to help you discover my projects and skills. What would you like to know about?`,
-                    timestamp: new Date()
-                }
-            ]);
         }
     };
 
     const handleSendMessage = () => {
         if (inputValue.trim()) {
+
+            console.log("text: ", inputValue.trim());
             // Add a user message
             const userMessage = {
                 sender: 'user',
-                text: inputValue,
+                text: {"text": inputValue},
                 timestamp: new Date()
             };
 
@@ -119,52 +107,24 @@ function App() {
 
             // Simulate bot response
             setIsLoading(true);
-            setTimeout(() => {
-                const botMessage = {
-                    sender: 'bot',
-                    text: generateBotResponse(inputValue),
-                    timestamp: new Date()
-                };
-                setMessages(prev => [...prev, botMessage]);
-                setIsLoading(false);
-            }, 1000);
+            generateBotResponse(inputValue)
+
+            // const botMessage = {
+            //     sender: 'bot',
+            //     text: {"text": generateBotResponse(inputValue)},
+            //     timestamp: new Date()
+            // };
+            // setMessages(prev => [...prev, botMessage]);
+            setIsLoading(false);
+
         }
     };
 
     // Simple response generator
     const generateBotResponse = (input) => {
-        const lowercaseInput = input.toLowerCase();
-
-        if (lowercaseInput.includes('project') || lowercaseInput.includes('work')) {
-            return "I've worked on several exciting projects! My portfolio includes a real-time sentiment analysis dashboard for customer feedback, an AI-powered content recommendation engine, and a React-based design system used by multiple teams. Which one would you like to hear more about?";
-        }
-
-        if (lowercaseInput.includes('skill') || lowercaseInput.includes('tech')) {
-            return "My technical skills include React, Node.js, Python (with TensorFlow and PyTorch), GraphQL, and AWS cloud services. I've recently been exploring Rust for performance-critical applications. Do you want me to elaborate on any of these skills?";
-        }
-
-        if (lowercaseInput.includes('contact') || lowercaseInput.includes('hire') || lowercaseInput.includes('job')) {
-            return "I'd be happy to discuss collaboration opportunities! You can contact me directly at portfolio@example.com or schedule a meeting through the Contact section at the bottom of this page. Would you like my resume as well?";
-        }
-
-        if (lowercaseInput.includes('education') || lowercaseInput.includes('degree') || lowercaseInput.includes('study')) {
-            return "I have an MS in Computer Science with a specialization in AI and Machine Learning. My thesis focused on improving transformer model efficiency for edge devices, which led to a publication at the NeurIPS conference.";
-        }
-
-        if (lowercaseInput.includes('github') || lowercaseInput.includes('code') || lowercaseInput.includes('repository')) {
-            return "You can find my open-source projects on GitHub under 'devportfolio'. My most popular repository is a React state management library with over 300 stars. Would you like the direct link?";
-        }
-
-        // Default responses if no keywords match
-        const responses = [
-            "That's an interesting question! My portfolio showcases projects in AI, machine learning, and web development. Want to hear about a specific area?",
-            "I've worked on several NLP projects using transformer models similar to what powers this chat interface. The most challenging part was optimizing token usage while maintaining context.",
-            "I specialize in React, Node.js, Python, and TensorFlow. Recently I've been exploring Rust for high-performance machine learning deployments.",
-            "I'd love to discuss potential collaborations! My background combines 5 years in software engineering with specialized expertise in conversational AI systems.",
-            "Feel free to ask about my technical skills, projects, education, or work experience. I'm here to share all aspects of my professional portfolio!"
-        ];
-
-        return responses[Math.floor(Math.random() * responses.length)];
+        console.log(input);
+        socket.current.emit("message",JSON.stringify({ text: inputValue }));
+        // return
     };
 
     // Handle Enter key press

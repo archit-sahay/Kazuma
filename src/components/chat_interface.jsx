@@ -39,12 +39,13 @@ function ChatInterface ({
 
             {/* Messages area */}
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                {messages.map((message, index) => (
+                {
+                    // console.log(messages)
+                    messages.map((message, index) => (
                     // console.log(message)
-                    <Message key={index} message={message.text} />
-                )
-
-                )}
+                        <Message key={index} message={message.text} sender={message.sender} date={message.timestamp} />
+                    ))
+                }
 
 
                 {isLoading && (

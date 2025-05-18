@@ -1,8 +1,9 @@
 import React from "react";
 import { User, Bot } from 'lucide-react';
 
-function Message({ message }){
-    const isBot = message.sender === 'bot';
+function Message({ message, sender, date }) {
+    const isBot = sender === 'bot';
+    console.log("aSDCVHGFDS", message.sender);
 
     return (
         <div className={`flex items-start space-x-2 mb-4 ${isBot ? '' : 'justify-end'}`}>
@@ -21,7 +22,7 @@ function Message({ message }){
             >
                 <p>{message.text}</p>
                 <span className="text-xs opacity-70 block text-right">
-          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
             </div>
 
