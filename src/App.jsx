@@ -17,13 +17,6 @@ function App() {
     const messagesEndRef = useRef(null);
     const videoRef = useRef(null);
 
-    // const [chatStarted, setChatStarted] = useState(false);
-    // const [messages, setMessages] = useState([]);
-    // const [inputValue, setInputValue] = useState('');
-    // const [name, setName] = useState('');
-    // const [email, setEmail] = useState('');
-    // const [isLoading, setIsLoading] = useState(false);
-
     const socket = useRef(null);
 
     useEffect(() => {
@@ -37,9 +30,7 @@ function App() {
 
         socket.current.emit("start", JSON.stringify({ name, email }));
 
-
-
-        // 2) listen for inbound “message” events
+        // 2) listen for inbound "message" events
         socket.current.on('message', (msg) => {
             setMessages(prev => [
                 ...prev,
@@ -49,11 +40,11 @@ function App() {
 
         // 3) cleanup on unmounting or when chatStopped
         return () => {
-            socket.current.disconnect();
+            if (socket.current) {
+                socket.current.disconnect();
+            }
         };
     }, [chatStarted, name, email]);
-
-
 
     // List of locally stored videos
     const videoList = [
@@ -87,13 +78,26 @@ function App() {
     const handleStartChat = () => {
         if (name.trim() && email.trim()) {
             setChatStarted(true);
-
         }
+    };
+
+    // Function to handle closing the chat
+    const handleCloseChat = () => {
+        // Disconnect socket if it exists
+        if (socket.current) {
+            socket.current.disconnect();
+            socket.current = null;
+        }
+
+        // Reset the chat state
+        setChatStarted(false);
+        setMessages([]);
+        setInputValue('');
+        // Keep name and email for convenience if user wants to start another chat
     };
 
     const handleSendMessage = () => {
         if (inputValue.trim()) {
-
             console.log("text: ", inputValue.trim());
             // Add a user message
             const userMessage = {
@@ -108,23 +112,16 @@ function App() {
             // Simulate bot response
             setIsLoading(true);
             generateBotResponse(inputValue)
-
-            // const botMessage = {
-            //     sender: 'bot',
-            //     text: {"text": generateBotResponse(inputValue)},
-            //     timestamp: new Date()
-            // };
-            // setMessages(prev => [...prev, botMessage]);
             setIsLoading(false);
-
         }
     };
 
     // Simple response generator
     const generateBotResponse = (input) => {
         console.log(input);
-        socket.current.emit("message",JSON.stringify({ text: inputValue }));
-        // return
+        if (socket.current) {
+            socket.current.emit("message", JSON.stringify({ text: inputValue }));
+        }
     };
 
     // Handle Enter key press
@@ -143,7 +140,7 @@ function App() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 p-4 relative">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 relative">
             {/* Video Background */}
             <div className="fixed inset-0 w-full h-full overflow-hidden z-0">
                 <video
@@ -152,7 +149,7 @@ function App() {
                     loop
                     muted={isMuted}
                     playsInline
-                    className="absolute min-w-full min-h-full object-cover"
+                    className="absolute min-w-full min-h-full object-cover "
                     src={currentVideo}
                 >
                     Your browser does not support video playback.
@@ -162,7 +159,7 @@ function App() {
                 <div className="absolute top-4 right-4 z-10 flex space-x-2">
                     <button
                         onClick={toggleMute}
-                        className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                        className="bg-gray-800/70 hover:bg-gray-700/90 text-white p-2 rounded-full transition-colors"
                         title={isMuted ? "Unmute" : "Mute"}
                     >
                         {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
@@ -170,7 +167,7 @@ function App() {
 
                     <button
                         onClick={() => setCurrentVideo(randomizeVideo())}
-                        className="bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                        className="bg-gray-800/70 hover:bg-gray-700/90 text-white p-2 rounded-full transition-colors"
                         title="Change Background"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -180,11 +177,11 @@ function App() {
                 </div>
 
                 {/* Overlay for better readability */}
-                <div className="absolute inset-0 bg-black/20 z-0"></div>
+                <div className="absolute inset-0 bg-black/60 z-0"></div>
             </div>
 
             {/* Chat Interface */}
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-purple-100 z-10">
+            <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 z-10">
                 {!chatStarted ? (
                     <WelcomeScreen
                         name={name}
@@ -203,14 +200,17 @@ function App() {
                         handleKeyPress={handleKeyPress}
                         isLoading={isLoading}
                         messagesEndRef={messagesEndRef}
+                        handleCloseChat={handleCloseChat} // Pass the close chat handler
                     />
                 )}
 
                 {/* Footer with Contact and Links */}
-                <footer className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex justify-center space-x-6">
+                <footer className="bg-gradient-to-r from-purple-800 to-indigo-900 p-4 flex justify-center space-x-6">
                     <a
-                        href="#contact"
-                        className="text-white hover:text-purple-200 text-sm font-medium transition-all duration-200 flex items-center"
+                        href="https://mail.google.com/mail/?view=cm&fs=1&to=clone.archit@gmail.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-200 hover:text-white text-sm font-medium transition-all duration-200 flex items-center"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -229,10 +229,10 @@ function App() {
                         Contact
                     </a>
                     <a
-                        href="https://github.com"
+                        href="https://github.com/archit-sahay"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-white hover:text-purple-200 text-sm font-medium transition-all duration-200 flex items-center"
+                        className="text-gray-200 hover:text-white text-sm font-medium transition-all duration-200 flex items-center"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -249,10 +249,10 @@ function App() {
                         GitHub
                     </a>
                     <a
-                        href="https://linkedin.com"
+                        href="https://www.linkedin.com/in/archit-sahay-118971219/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-white hover:text-purple-200 text-sm font-medium transition-all duration-200 flex items-center"
+                        className="text-gray-200 hover:text-white text-sm font-medium transition-all duration-200 flex items-center"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

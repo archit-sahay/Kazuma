@@ -40,3 +40,36 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Add these styles to your existing App.css */
+
+/* Enable Tailwind dark mode with class strategy */
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+/* Base styles for dark mode */
+.dark {
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --text-primary: #f9fafb;
+  --text-secondary: #e5e7eb;
+  --border-color: #374151;
+}
+
+/* Apply dark mode styles to body background */
+body.dark-mode {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Transitions for smoother mode switching */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
