@@ -72,7 +72,7 @@ function App() {
     // Randomly select a video from the local list
     const randomizeVideo = () => {
         const randomVideo = videoList[Math.floor(Math.random() * videoList.length)];
-        return `./src/assets/${randomVideo}`;
+        return `/assets/videos/${randomVideo}`;
     };
 
     const handleStartChat = () => {
