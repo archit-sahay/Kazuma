@@ -180,8 +180,8 @@ function App() {
                 <div className="absolute inset-0 bg-black/60 z-0"></div>
             </div>
 
-            {/* Chat Interface */}
-            <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 z-10">
+            {/* Chat Interface - Dynamic width based on chat state */}
+            <div className={`w-full ${chatStarted ? 'max-w-4xl' : 'max-w-md'} bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 z-10 transition-all duration-500 ease-in-out`}>
                 {!chatStarted ? (
                     <WelcomeScreen
                         name={name}

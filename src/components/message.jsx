@@ -12,10 +12,10 @@ marked.setOptions({
             return `<pre class="language-js"><code class="language-js">${escapeHtml(code)}</code></pre>`;
         } else if (lang === 'python') {
             return `<pre class="language-python"><code class="language-python">${escapeHtml(code)}</code></pre>`;
-        } else if (lang === 'html') {
-            return `<pre class="language-html"><code class="language-html">${escapeHtml(code)}</code></pre>`;
         } else if (lang === 'css') {
             return `<pre class="language-css"><code class="language-css">${escapeHtml(code)}</code></pre>`;
+        } else if (lang === 'html') {
+            return `<pre class="language-html"><code class="language-html">${escapeHtml(code)}</code></pre>`;
         }
         return `<pre><code>${escapeHtml(code)}</code></pre>`;
     },
@@ -51,22 +51,22 @@ function Message({ message, sender, date }) {
     };
 
     return (
-        <div className={`flex items-start space-x-2 mb-4 ${isBot ? '' : 'justify-end'}`}>
+        <div className={`flex items-start space-x-3 md:space-x-4 mb-6 md:mb-8 ${isBot ? 'mr-12 md:mr-16 lg:mr-20' : 'justify-end ml-12 md:ml-16 lg:ml-20'}`}>
             {isBot && (
-                <div className="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     <img src={botImage} alt="Bot" className="w-full h-full object-cover" />
                 </div>
             )}
 
             <div
-                className={`max-w-xs sm:max-w-sm md:max-w-md py-2 px-4 rounded-2xl ${
+                className={`max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl py-3 px-4 md:py-4 md:px-6 rounded-2xl ${
                     isBot
                         ? 'bg-gradient-to-r from-indigo-800 to-purple-900 text-gray-200'
                         : 'bg-gray-700 text-gray-200'
                 }`}
             >
                 <div
-                    className="text-left markdown-content"
+                    className="text-left markdown-content text-sm md:text-base"
                     dangerouslySetInnerHTML={createMarkup(messageText)}
                 />
                 <span className="text-xs opacity-70 block text-right text-gray-300 mt-2">
@@ -75,8 +75,8 @@ function Message({ message, sender, date }) {
             </div>
 
             {!isBot && (
-                <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
-                    <User size={18} className="text-gray-200" />
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                    <User size={18} className="md:w-6 md:h-6 text-gray-200" />
                 </div>
             )}
         </div>
