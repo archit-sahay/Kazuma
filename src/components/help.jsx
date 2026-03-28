@@ -10,7 +10,7 @@ function HelpModal({ onClose }) {
                 onClick={onClose}
             ></div>
 
-            {/* Modal Content - smaller max width and padding */}
+            {/* Modal Content */}
             <div className="relative w-full max-w-xl p-6 rounded-xl shadow-xl bg-gray-800 text-gray-100">
                 {/* Close Button */}
                 <button
@@ -20,13 +20,13 @@ function HelpModal({ onClose }) {
                     <X size={20} />
                 </button>
 
-                <h2 className="text-2xl font-bold mb-4 text-indigo-300">How to Use This Chat</h2>
+                <h2 className="text-2xl font-bold mb-4 text-amber-300">How to Use This Chat</h2>
 
                 <div className="space-y-4 text-sm">
                     <div>
                         <h3 className="text-lg font-semibold mb-2 text-gray-200">Getting Started</h3>
                         <p className="text-gray-300">
-                            Ask about Archit’s skills, projects, and interests. The assistant will provide helpful info based on his background.
+                            Ask about Archit's skills, projects, and interests. The assistant will provide helpful info based on his background.
                         </p>
                     </div>
 
@@ -57,7 +57,7 @@ function HelpModal({ onClose }) {
                 <div className="mt-6 pt-4 border-t border-gray-700 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="bg-gradient-to-r from-indigo-700 to-purple-800 text-white py-2 px-5 rounded-lg hover:opacity-90 transition-opacity text-base font-medium"
+                        className="bg-gradient-to-r from-amber-600 to-orange-700 text-white py-2 px-5 rounded-lg hover:opacity-90 transition-opacity text-base font-medium"
                     >
                         Got it
                     </button>

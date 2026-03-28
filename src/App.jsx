@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useRef, useState, useCallback} from 'react'
 import './App.css'
 import WelcomeScreen from "./components/welcome_screen.jsx";
 import ChatInterface from "./components/chat_interface.jsx";
@@ -12,41 +12,20 @@ function App() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [currentVideo, setCurrentVideo] = useState('./src/assets/japan_eniac.mp4');
+    const [typingText, setTypingText] = useState('');
     const [isMuted, setIsMuted] = useState(true);
+    const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const messagesEndRef = useRef(null);
-    const videoRef = useRef(null);
+    const streamingRef = useRef(false);
+
+    // Dual-video crossfade state
+    const videoRefA = useRef(null);
+    const videoRefB = useRef(null);
+    const [activeVideo, setActiveVideo] = useState('A'); // which video is currently visible
+    const [isShuffling, setIsShuffling] = useState(false);
 
     const socket = useRef(null);
 
-    useEffect(() => {
-        if (!chatStarted) return;
-
-        // 1) establish socket connection
-        socket.current = io("http://localhost:6969", {
-            transports: ["websocket"],
-            withCredentials: true
-        });
-
-        socket.current.emit("start", JSON.stringify({ name, email }));
-
-        // 2) listen for inbound "message" events
-        socket.current.on('message', (msg) => {
-            setMessages(prev => [
-                ...prev,
-                { sender: 'bot', text: msg, timestamp: new Date() }
-            ]);
-        });
-
-        // 3) cleanup on unmounting or when chatStopped
-        return () => {
-            if (socket.current) {
-                socket.current.disconnect();
-            }
-        };
-    }, [chatStarted, name, email]);
-
-    // List of locally stored videos
     const videoList = [
         'autumn_japan.webm',
         'autumn_sunset.mp4',
@@ -57,10 +36,116 @@ function App() {
         'waterfall_japan.mp4'
     ];
 
-    // Select a random video on component mount
-    useEffect(() => {
-        setCurrentVideo(randomizeVideo());
+    const [videoSrcA, setVideoSrcA] = useState('');
+    const [videoSrcB, setVideoSrcB] = useState('');
+
+    const randomizeVideo = useCallback((excludeSrc) => {
+        let newVideo;
+        do {
+            newVideo = `/assets/videos/${videoList[Math.floor(Math.random() * videoList.length)]}`;
+        } while (newVideo === excludeSrc && videoList.length > 1);
+        return newVideo;
     }, []);
+
+    // Set initial video on mount
+    useEffect(() => {
+        const initial = randomizeVideo('');
+        setVideoSrcA(initial);
+    }, []);
+
+    useEffect(() => {
+        if (!chatStarted) return;
+
+        socket.current = io("http://localhost:6969", {
+            transports: ["websocket"],
+            withCredentials: true,
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
+        });
+
+        setConnectionStatus('connecting');
+
+        socket.current.on('connect', () => {
+            setConnectionStatus('connected');
+            socket.current.emit("start", JSON.stringify({ name, email }));
+        });
+
+        socket.current.on('disconnect', () => {
+            setConnectionStatus('disconnected');
+        });
+
+        socket.current.on('reconnect_attempt', () => {
+            setConnectionStatus('reconnecting');
+        });
+
+        socket.current.on('reconnect_failed', () => {
+            setConnectionStatus('disconnected');
+            setMessages(prev => [...prev, {
+                sender: 'system',
+                text: 'Connection lost. Please refresh the page to reconnect.',
+                timestamp: new Date()
+            }]);
+        });
+
+        socket.current.on('message', (msg) => {
+            setIsLoading(false);
+            setTypingText('');
+            streamingRef.current = false;
+            setMessages(prev => [
+                ...prev,
+                { sender: 'bot', text: msg, timestamp: new Date() }
+            ]);
+        });
+
+        socket.current.on('stream', (msg) => {
+            setIsLoading(false);
+            setTypingText('');
+            const chunk = msg?.text || '';
+            if (!streamingRef.current) {
+                streamingRef.current = true;
+                setMessages(prev => [
+                    ...prev,
+                    { sender: 'bot', text: { text: chunk }, timestamp: new Date(), streaming: true }
+                ]);
+            } else {
+                setMessages(prev => {
+                    const updated = [...prev];
+                    const last = updated[updated.length - 1];
+                    if (last && last.sender === 'bot' && last.streaming) {
+                        const existingText = typeof last.text === 'object' ? last.text.text : last.text;
+                        updated[updated.length - 1] = {
+                            ...last,
+                            text: { text: existingText + chunk }
+                        };
+                    }
+                    return updated;
+                });
+            }
+        });
+
+        socket.current.on('stream_end', () => {
+            streamingRef.current = false;
+            setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.streaming) {
+                    updated[updated.length - 1] = { ...last, streaming: false };
+                }
+                return updated;
+            });
+        });
+
+        socket.current.on('typing', (msg) => {
+            setTypingText(msg?.text || 'Thinking...');
+        });
+
+        return () => {
+            if (socket.current) {
+                socket.current.disconnect();
+            }
+        };
+    }, [chatStarted, name, email]);
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -69,37 +154,25 @@ function App() {
         }
     }, [messages]);
 
-    // Randomly select a video from the local list
-    const randomizeVideo = () => {
-        const randomVideo = videoList[Math.floor(Math.random() * videoList.length)];
-        return `/assets/videos/${randomVideo}`;
-    };
-
     const handleStartChat = () => {
         if (name.trim() && email.trim()) {
             setChatStarted(true);
         }
     };
 
-    // Function to handle closing the chat
     const handleCloseChat = () => {
-        // Disconnect socket if it exists
         if (socket.current) {
             socket.current.disconnect();
             socket.current = null;
         }
-
-        // Reset the chat state
         setChatStarted(false);
         setMessages([]);
         setInputValue('');
-        // Keep name and email for convenience if user wants to start another chat
+        setConnectionStatus('disconnected');
     };
 
     const handleSendMessage = () => {
         if (inputValue.trim()) {
-            console.log("text: ", inputValue.trim());
-            // Add a user message
             const userMessage = {
                 sender: 'user',
                 text: {"text": inputValue},
@@ -107,53 +180,97 @@ function App() {
             };
 
             setMessages(prev => [...prev, userMessage]);
-            setInputValue('');
-
-            // Simulate bot response
             setIsLoading(true);
-            generateBotResponse(inputValue)
-            setIsLoading(false);
+            setTypingText('');
+            generateBotResponse(inputValue);
+            setInputValue('');
         }
     };
 
-    // Simple response generator
     const generateBotResponse = (input) => {
-        console.log(input);
         if (socket.current) {
-            socket.current.emit("message", JSON.stringify({ text: inputValue }));
+            socket.current.emit("message", JSON.stringify({ text: input }));
         }
     };
 
-    // Handle Enter key press
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter') {
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
             chatStarted ? handleSendMessage() : handleStartChat();
         }
     };
 
-    // Toggle video sound
     const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !videoRef.current.muted;
-            setIsMuted(videoRef.current.muted);
+        const activeRef = activeVideo === 'A' ? videoRefA : videoRefB;
+        if (activeRef.current) {
+            activeRef.current.muted = !activeRef.current.muted;
+            setIsMuted(activeRef.current.muted);
         }
     };
 
+    // Dual-video crossfade shuffle
+    const handleShuffle = useCallback(() => {
+        if (isShuffling) return;
+        setIsShuffling(true);
+
+        const currentSrc = activeVideo === 'A' ? videoSrcA : videoSrcB;
+        const newSrc = randomizeVideo(currentSrc);
+        const inactiveRef = activeVideo === 'A' ? videoRefB : videoRefA;
+
+        // Load new video on the inactive element
+        if (activeVideo === 'A') {
+            setVideoSrcB(newSrc);
+        } else {
+            setVideoSrcA(newSrc);
+        }
+
+        // Wait for canplay on the inactive video, then crossfade
+        const onReady = () => {
+            inactiveRef.current?.removeEventListener('canplay', onReady);
+            // Crossfade: show new, hide old
+            const newActive = activeVideo === 'A' ? 'B' : 'A';
+            setActiveVideo(newActive);
+
+            // After transition, pause the old video
+            setTimeout(() => {
+                const oldRef = activeVideo === 'A' ? videoRefA : videoRefB;
+                if (oldRef.current) {
+                    oldRef.current.pause();
+                }
+                setIsShuffling(false);
+            }, 800);
+        };
+
+        if (inactiveRef.current) {
+            inactiveRef.current.addEventListener('canplay', onReady, { once: true });
+            inactiveRef.current.load();
+            inactiveRef.current.play().catch(() => {});
+        }
+    }, [isShuffling, activeVideo, videoSrcA, videoSrcB, randomizeVideo]);
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 relative">
-            {/* Video Background */}
+            {/* Video Background — Dual video for crossfade */}
             <div className="fixed inset-0 w-full h-full overflow-hidden z-0">
                 <video
-                    ref={videoRef}
+                    ref={videoRefA}
                     autoPlay
                     loop
                     muted={isMuted}
                     playsInline
-                    className="absolute min-w-full min-h-full object-cover "
-                    src={currentVideo}
-                >
-                    Your browser does not support video playback.
-                </video>
+                    className="absolute inset-0 min-w-full min-h-full object-cover transition-opacity duration-700"
+                    style={{ opacity: activeVideo === 'A' ? 1 : 0 }}
+                    src={videoSrcA}
+                />
+                <video
+                    ref={videoRefB}
+                    loop
+                    muted={isMuted}
+                    playsInline
+                    className="absolute inset-0 min-w-full min-h-full object-cover transition-opacity duration-700"
+                    style={{ opacity: activeVideo === 'B' ? 1 : 0 }}
+                    src={videoSrcB}
+                />
 
                 {/* Video Controls */}
                 <div className="absolute top-4 right-4 z-10 flex space-x-2">
@@ -166,8 +283,9 @@ function App() {
                     </button>
 
                     <button
-                        onClick={() => setCurrentVideo(randomizeVideo())}
-                        className="bg-gray-800/70 hover:bg-gray-700/90 text-white p-2 rounded-full transition-colors"
+                        onClick={handleShuffle}
+                        disabled={isShuffling}
+                        className={`bg-gray-800/70 hover:bg-gray-700/90 text-white p-2 rounded-full transition-colors ${isShuffling ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title="Change Background"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -181,7 +299,7 @@ function App() {
             </div>
 
             {/* Chat Interface - Dynamic width based on chat state */}
-            <div className={`w-full ${chatStarted ? 'max-w-4xl' : 'max-w-md'} bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 z-10 transition-all duration-500 ease-in-out`}>
+            <div className={`w-full ${chatStarted ? 'max-w-[90vw] xl:max-w-[85vw] 2xl:max-w-[80vw]' : 'max-w-md'} bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/10 z-10 transition-all duration-500 ease-in-out`}>
                 {!chatStarted ? (
                     <WelcomeScreen
                         name={name}
@@ -189,7 +307,7 @@ function App() {
                         email={email}
                         setEmail={setEmail}
                         handleStartChat={handleStartChat}
-                        handleKeyPress={handleKeyPress}
+                        handleKeyDown={handleKeyDown}
                     />
                 ) : (
                     <ChatInterface
@@ -197,17 +315,19 @@ function App() {
                         inputValue={inputValue}
                         setInputValue={setInputValue}
                         handleSendMessage={handleSendMessage}
-                        handleKeyPress={handleKeyPress}
+                        handleKeyDown={handleKeyDown}
                         isLoading={isLoading}
+                        typingText={typingText}
                         messagesEndRef={messagesEndRef}
-                        handleCloseChat={handleCloseChat} // Pass the close chat handler
+                        handleCloseChat={handleCloseChat}
+                        connectionStatus={connectionStatus}
                     />
                 )}
 
                 {/* Footer with Contact and Links */}
-                <footer className="bg-gradient-to-r from-purple-800 to-indigo-900 p-4 flex justify-center space-x-6">
+                <footer className="bg-slate-900/80 backdrop-blur-sm border-t border-white/10 p-4 flex justify-center space-x-6">
                     <a
-                        href="https://mail.google.com/mail/?view=cm&fs=1&to=clone.archit@gmail.com"
+                        href="https://mail.google.com/mail/?view=cm&fs=1&to=dak.archit@gmail.com"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-200 hover:text-white text-sm font-medium transition-all duration-200 flex items-center"
