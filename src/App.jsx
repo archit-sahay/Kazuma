@@ -56,7 +56,7 @@ function App() {
     useEffect(() => {
         if (!chatStarted) return;
 
-        socket.current = io("http://localhost:6969", {
+        socket.current = io(import.meta.env.VITE_API_URL || "http://localhost:6969", {
             transports: ["websocket"],
             withCredentials: true,
             reconnection: true,

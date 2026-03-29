@@ -5,7 +5,7 @@ function WelcomeScreen ({ name, setName, email, setEmail, handleStartChat, handl
     const [visitorCount, setVisitorCount] = useState(null);
 
     useEffect(() => {
-        fetch('http://localhost:6969/kazuma/count')
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:6969'}/kazuma/count`)
             .then(res => res.json())
             .then(data => setVisitorCount(data.count))
             .catch(() => {});
