@@ -299,7 +299,7 @@ function App() {
             </div>
 
             {/* Chat Interface - Dynamic width based on chat state */}
-            <div className={`w-full ${chatStarted ? 'max-w-[90vw] xl:max-w-[85vw] 2xl:max-w-[80vw]' : 'max-w-md'} bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/10 z-10 transition-all duration-500 ease-in-out`}>
+            <div className={`w-full ${chatStarted ? 'max-w-5xl xl:max-w-6xl' : 'max-w-md'} bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/10 z-10 transition-all duration-500 ease-in-out`}>
                 {!chatStarted ? (
                     <WelcomeScreen
                         name={name}

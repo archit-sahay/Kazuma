@@ -43,9 +43,9 @@ function Message({ message, sender, date }) {
                 </div>
             )}
 
-            <div className="relative">
+            <div className={`relative ${isBot ? 'max-w-[80%]' : 'max-w-[70%]'}`}>
                 <div
-                    className={`${isBot ? 'max-w-[85%] lg:max-w-[75%]' : 'max-w-[70%] lg:max-w-[60%]'} py-3 px-4 md:py-4 md:px-6 rounded-2xl ${
+                    className={`inline-block py-3 px-4 md:py-4 md:px-6 rounded-2xl ${
                         isBot
                             ? 'bg-slate-800/80 backdrop-blur-sm border border-slate-700/50 text-gray-200'
                             : 'bg-gray-700 text-gray-200'
